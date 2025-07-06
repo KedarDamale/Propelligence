@@ -28,7 +28,7 @@ export async function POST(req) {
         headers: { 'Content-Type': 'application/json' },
       });
     }
-  } catch (error) {
+  } catch {
     return new Response(JSON.stringify({ error: 'Failed to set cookie' }), {
       status: 500,
       headers: { 'Content-Type': 'application/json' },
