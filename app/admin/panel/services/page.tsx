@@ -81,31 +81,44 @@ export default function ServicesAdminPage() {
     try {
       if (editId) {
         // Update (no PDF update for simplicity)
-        await fetch(`/api/services/${editId}`, {
+        const updateResponse = await fetch(`/api/services/${editId}`, {
           method: "PUT",
           headers: { "Content-Type": "application/json" },
           body: JSON.stringify(form),
         });
+        
+        if (!updateResponse.ok) {
+          throw new Error('Update failed');
+        }
+        
         addNotification('success', 'Service updated successfully!');
       } else {
         // Create (with optional PDF)
+        let response;
         if (pdf) {
           const fd = new FormData();
           fd.append("title", form.title);
           fd.append("short_desc", form.short_desc);
           fd.append("long_desc", form.long_desc);
           fd.append("pdf", pdf);
-          await fetch("/api/services/upload", {
+          
+          response = await fetch("/api/services/upload", {
             method: "POST",
             body: fd,
           });
         } else {
-          await fetch("/api/services", {
+          response = await fetch("/api/services", {
             method: "POST",
             headers: { "Content-Type": "application/json" },
             body: JSON.stringify(form),
           });
         }
+        
+        if (!response.ok) {
+          const errorData = await response.json().catch(() => ({}));
+          throw new Error(errorData.error || 'Creation failed');
+        }
+        
         addNotification('success', 'Service created successfully!');
       }
       
@@ -115,8 +128,10 @@ export default function ServicesAdminPage() {
       setShowForm(false);
       if (fileInputRef.current) fileInputRef.current.value = "";
       fetchServices();
-    } catch {
-      addNotification('error', editId ? 'Failed to update service' : 'Failed to create service');
+    } catch (error) {
+      console.error('Service operation error:', error);
+      const errorMessage = error instanceof Error ? error.message : 'Unknown error occurred';
+      addNotification('error', editId ? 'Failed to update service' : `Failed to create service: ${errorMessage}`);
     }
   }
 

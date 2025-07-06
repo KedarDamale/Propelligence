@@ -11,7 +11,7 @@ const HeroSection = () => {
             <div className="space-y-8 animate-fade-in-up text-center">
               <h1 className="text-4xl sm:text-5xl md:text-5xl lg:text-5xl font-bold text-gray-900 leading-tight">
                 Mitigate financial risks with<br />
-                <span className="text-5xl sm:text-6xl md:text-6xl lg:text-6xl text-transparent bg-clip-text bg-gradient-to-r from-[#022d58] to-[#003c96] relative inline-block mt-2 pb-2">
+                <span className="text-5xl sm:text-6xl md:text-6xl lg:text-6xl text-transparent bg-clip-text bg-gradient-to-r from-[#022d58] to-[#003c96] relative inline-block mt-2 pb-2 text-center">
                   Propelligence
                   <span className="block text-xl sm:text-2xl md:text-2xl lg:text-2xl text-black font-bold mt-1 tracking-wide text-center">Advisors Private Limited</span>
                 </span>
