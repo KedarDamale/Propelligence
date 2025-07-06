@@ -14,15 +14,46 @@ const ServicesSection = () => {
   const [services, setServices] = useState<Service[]>([]);
   const [expandedIndex, setExpandedIndex] = useState<number | null>(null);
   const [visibleCount, setVisibleCount] = useState(3);
+  const [loading, setLoading] = useState(true);
 
   useEffect(() => {
     async function fetchServices() {
-      const res = await fetch("/api/services");
-      const data = await res.json();
-      setServices(data);
+      try {
+        setLoading(true);
+        const res = await fetch("/api/public/services");
+        if (res.ok) {
+          const data = await res.json();
+          setServices(Array.isArray(data) ? data : []);
+        } else {
+          console.error('Failed to fetch services:', res.status);
+          setServices([]);
+        }
+      } catch (error) {
+        console.error('Error fetching services:', error);
+        setServices([]);
+      } finally {
+        setLoading(false);
+      }
     }
     fetchServices();
   }, []);
+
+  // Ensure services is always an array
+  const safeServices = Array.isArray(services) ? services : [];
+  const visibleServices = safeServices.slice(0, visibleCount);
+
+  if (loading) {
+    return (
+      <section id="services" className="bg-white">
+        <div className="container mx-auto px-6 max-w-5xl">
+          <div className="text-center py-12">
+            <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-[#022d58] mx-auto"></div>
+            <p className="text-gray-600 mt-4">Loading services...</p>
+          </div>
+        </div>
+      </section>
+    );
+  }
 
   return (
     <section id="services" className=" bg-white">
@@ -33,8 +64,10 @@ const ServicesSection = () => {
             Comprehensive financial risk management solutions designed to protect and grow your business.
           </p>
         </div>
+        
+
         <div className="grid md:grid-cols-3 gap-8 mb-12">
-          {services.slice(0, visibleCount).map((service, index) => {
+          {visibleServices.map((service, index) => {
             const isExpanded = expandedIndex === index;
             return (
               <div
@@ -73,7 +106,7 @@ const ServicesSection = () => {
                     <div className="w-full flex justify-center">
                       <hr className="w-3/4 border-t-2 border-black my-2 transition-all duration-500" />
                     </div>
-                    {isExpanded && service.pdfUrl && (
+                    {service.pdfUrl ? (
                       <a
                         href={service.pdfUrl}
                         target="_blank"
@@ -83,17 +116,16 @@ const ServicesSection = () => {
                         style={{ textDecoration: 'none' }}
                       >
                         <ArrowRight size={18} className="mr-2" />
-                        View Broucher
+                        View Service PDF
                       </a>
-                    )}
-                    {isExpanded && !service.pdfUrl && (
+                    ) : (
                       <button
                         className="mt-4 bg-gray-400 text-white px-4 py-2 rounded-full font-semibold cursor-not-allowed flex items-center space-x-2"
                         onClick={e => e.stopPropagation()}
                         disabled
                       >
                         <ArrowRight size={18} className="mr-2" />
-                        No Broucher
+                        No Service PDF
                       </button>
                     )}
                   </div>
@@ -109,17 +141,17 @@ const ServicesSection = () => {
             );
           })}
         </div>
-        {visibleCount < services.length && (
+        {visibleCount < safeServices.length && (
           <div className="text-center mb-8">
             <button
               className="bg-[#022d58] text-white px-6 py-3 rounded-full font-semibold hover:bg-[#003c96] transition-colors duration-300"
-              onClick={() => setVisibleCount(count => Math.min(count + 3, services.length))}
+              onClick={() => setVisibleCount(count => Math.min(count + 3, safeServices.length))}
             >
               Load More Services
             </button>
           </div>
         )}
-        {visibleCount >= services.length && services.length > 2 && (
+        {visibleCount >= safeServices.length && safeServices.length > 2 && (
           <div className="text-center mb-8">
             <button
               className="bg-[#022d58] text-white px-6 py-3 rounded-full font-semibold hover:bg-[#003c96] transition-colors duration-300"
@@ -138,6 +170,8 @@ const ServicesSection = () => {
             </button>
           </div>
         )}
+        
+
       </div>
     </section>
   );

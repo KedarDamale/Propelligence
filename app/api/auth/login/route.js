@@ -1,15 +1,38 @@
 // POST: Authenticate admin login
 export async function POST(req) {
-  const { username, password } = await req.json();
-  const envUser = process.env.ADMIN_USERNAME;
-  const envPass = process.env.ADMIN_PASSWORD;
-  console.log('DEBUG ENV USER:', envUser);
-  console.log('DEBUG ENV PASS:', envPass);
-  console.log('DEBUG INPUT USER:', username);
-  console.log('DEBUG INPUT PASS:', password);
-  if (username === envUser && password === envPass) {
-    return new Response(JSON.stringify({ success: true }), { status: 200 });
-  } else {
-    return new Response(JSON.stringify({ success: false, error: 'Invalid credentials' }), { status: 401 });
+  try {
+    const { username, password } = await req.json();
+    
+    // Get credentials from environment variables
+    const adminUsername = process.env.ADMIN_USERNAME;
+    const adminPassword = process.env.ADMIN_PASSWORD;
+    
+    // Simple username and password comparison
+    if (username === adminUsername && password === adminPassword) {
+      return new Response(JSON.stringify({ 
+        authenticated: true,
+        message: 'Login successful'
+      }), {
+        status: 200,
+        headers: { 'Content-Type': 'application/json' },
+      });
+    } else {
+      return new Response(JSON.stringify({ 
+        authenticated: false,
+        message: 'Invalid credentials'
+      }), {
+        status: 401,
+        headers: { 'Content-Type': 'application/json' },
+      });
+    }
+  } catch (error) {
+    console.error('Login error:', error);
+    return new Response(JSON.stringify({ 
+      authenticated: false,
+      message: 'Login failed'
+    }), {
+      status: 500,
+      headers: { 'Content-Type': 'application/json' },
+    });
   }
 }

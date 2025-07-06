@@ -16,7 +16,7 @@ const TestimonialsSection = () => {
 
   useEffect(() => {
     async function fetchTestimonials() {
-      const res = await fetch('/api/testimonials');
+      const res = await fetch('/api/public/testimonials');
       const data = await res.json();
       setTestimonials(data);
     }

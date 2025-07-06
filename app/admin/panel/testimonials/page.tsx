@@ -1,6 +1,7 @@
 "use client";
 import { useEffect, useState, useCallback } from "react";
-import { Plus, Edit, Trash2, Star, X, CheckCircle, AlertCircle, MessageSquare } from "lucide-react";
+import { Plus, Edit, Trash2, Star, X, CheckCircle, AlertCircle, MessageSquare, Loader2 } from "lucide-react";
+import { authenticatedFetch } from "../../../../lib/auth";
 
 interface Testimonial {
   _id?: string;
@@ -29,6 +30,10 @@ export default function TestimonialsAdminPage() {
   const [editId, setEditId] = useState<string | null>(null);
   const [error, setError] = useState("");
   const [notifications, setNotifications] = useState<Notification[]>([]);
+  
+  // Loading states
+  const [isSubmitting, setIsSubmitting] = useState(false);
+  const [deletingTestimonial, setDeletingTestimonial] = useState<string | null>(null);
 
   const addNotification = useCallback((type: 'success' | 'error', message: string) => {
     const id = Date.now().toString();
@@ -44,10 +49,20 @@ export default function TestimonialsAdminPage() {
   const fetchTestimonials = useCallback(async () => {
     setLoading(true);
     try {
-      const res = await fetch("/api/testimonials");
+      const res = await authenticatedFetch("/api/testimonials");
+      if (res.status === 401) {
+        // Redirect to login if unauthorized
+        window.location.href = '/admin/login';
+        return;
+      }
       const data = await res.json();
       setTestimonials(data);
-    } catch {
+    } catch (error) {
+      console.error('Failed to load testimonials:', error);
+      if (error instanceof Error && error.message === 'Authentication token not available') {
+        window.location.href = '/admin/login';
+        return;
+      }
       addNotification('error', 'Failed to load testimonials');
     } finally {
       setLoading(false);
@@ -74,10 +89,12 @@ export default function TestimonialsAdminPage() {
       return;
     }
     
+    setIsSubmitting(true);
+    
     try {
       if (editId) {
         // Update
-        await fetch(`/api/testimonials/${editId}`, {
+        await authenticatedFetch(`/api/testimonials/${editId}`, {
           method: "PUT",
           headers: { "Content-Type": "application/json" },
           body: JSON.stringify(form),
@@ -85,7 +102,7 @@ export default function TestimonialsAdminPage() {
         addNotification('success', 'Testimonial updated successfully!');
       } else {
         // Create
-        await fetch("/api/testimonials", {
+        await authenticatedFetch("/api/testimonials", {
           method: "POST",
           headers: { "Content-Type": "application/json" },
           body: JSON.stringify(form),
@@ -98,6 +115,8 @@ export default function TestimonialsAdminPage() {
       fetchTestimonials();
     } catch {
       addNotification('error', editId ? 'Failed to update testimonial' : 'Failed to create testimonial');
+    } finally {
+      setIsSubmitting(false);
     }
   }
 
@@ -112,12 +131,16 @@ export default function TestimonialsAdminPage() {
   async function handleDelete(id: string) {
     if (!confirm("Are you sure you want to delete this testimonial?")) return;
     
+    setDeletingTestimonial(id);
+    
     try {
-      await fetch(`/api/testimonials/${id}`, { method: "DELETE" });
+      await authenticatedFetch(`/api/testimonials/${id}`, { method: "DELETE" });
       addNotification('success', 'Testimonial deleted successfully!');
       fetchTestimonials();
     } catch {
       addNotification('error', 'Failed to delete testimonial');
+    } finally {
+      setDeletingTestimonial(null);
     }
   }
 
@@ -179,7 +202,8 @@ export default function TestimonialsAdminPage() {
         </div>
         <button
           onClick={() => setShowForm(true)}
-          className="bg-gradient-to-r from-[#022d58] to-[#003c96] text-white px-6 py-3 rounded-xl font-semibold shadow-lg hover:shadow-xl transform hover:-translate-y-1 transition-all duration-300 flex items-center gap-2"
+          disabled={isSubmitting}
+          className="bg-gradient-to-r from-[#022d58] to-[#003c96] text-white px-6 py-3 rounded-xl font-semibold shadow-lg hover:shadow-xl transform hover:-translate-y-1 transition-all duration-300 flex items-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed disabled:transform-none"
         >
           <Plus size={20} />
           Add New Testimonial
@@ -195,7 +219,8 @@ export default function TestimonialsAdminPage() {
             </h2>
             <button
               onClick={resetForm}
-              className="text-gray-500 hover:text-[#022d58] transition-colors"
+              disabled={isSubmitting}
+              className="text-gray-500 hover:text-[#022d58] transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
             >
               <X size={24} />
             </button>
@@ -212,7 +237,8 @@ export default function TestimonialsAdminPage() {
                   value={form.name}
                   onChange={handleChange}
                   placeholder="Enter client name"
-                  className="w-full p-4 border-2 border-[#022d58]/20 rounded-xl bg-white/50 backdrop-blur-sm focus:border-[#022d58] focus:outline-none transition-all duration-300 text-[#022d58] placeholder-gray-500"
+                  disabled={isSubmitting}
+                  className="w-full p-4 border-2 border-[#022d58]/20 rounded-xl bg-white/50 backdrop-blur-sm focus:border-[#022d58] focus:outline-none transition-all duration-300 text-[#022d58] placeholder-gray-500 disabled:opacity-50 disabled:cursor-not-allowed"
                   required
                 />
               </div>
@@ -226,7 +252,8 @@ export default function TestimonialsAdminPage() {
                   value={form.role}
                   onChange={handleChange}
                   placeholder="e.g., CEO, Manager, Client"
-                  className="w-full p-4 border-2 border-[#022d58]/20 rounded-xl bg-white/50 backdrop-blur-sm focus:border-[#022d58] focus:outline-none transition-all duration-300 text-[#022d58] placeholder-gray-500"
+                  disabled={isSubmitting}
+                  className="w-full p-4 border-2 border-[#022d58]/20 rounded-xl bg-white/50 backdrop-blur-sm focus:border-[#022d58] focus:outline-none transition-all duration-300 text-[#022d58] placeholder-gray-500 disabled:opacity-50 disabled:cursor-not-allowed"
                   required
                 />
               </div>
@@ -244,7 +271,8 @@ export default function TestimonialsAdminPage() {
                   max={5}
                   value={form.star}
                   onChange={handleChange}
-                  className="w-20 p-4 border-2 border-[#022d58]/20 rounded-xl bg-white/50 backdrop-blur-sm focus:border-[#022d58] focus:outline-none transition-all duration-300 text-[#022d58] text-center"
+                  disabled={isSubmitting}
+                  className="w-20 p-4 border-2 border-[#022d58]/20 rounded-xl bg-white/50 backdrop-blur-sm focus:border-[#022d58] focus:outline-none transition-all duration-300 text-[#022d58] text-center disabled:opacity-50 disabled:cursor-not-allowed"
                   required
                 />
                 <div className="flex gap-1">
@@ -263,7 +291,8 @@ export default function TestimonialsAdminPage() {
                 onChange={handleChange}
                 placeholder="Enter the client's testimonial or review"
                 rows={4}
-                className="w-full p-4 border-2 border-[#022d58]/20 rounded-xl bg-white/50 backdrop-blur-sm focus:border-[#022d58] focus:outline-none transition-all duration-300 text-[#022d58] placeholder-gray-500 resize-none"
+                disabled={isSubmitting}
+                className="w-full p-4 border-2 border-[#022d58]/20 rounded-xl bg-white/50 backdrop-blur-sm focus:border-[#022d58] focus:outline-none transition-all duration-300 text-[#022d58] placeholder-gray-500 resize-none disabled:opacity-50 disabled:cursor-not-allowed"
                 required
               />
             </div>
@@ -277,15 +306,26 @@ export default function TestimonialsAdminPage() {
             <div className="flex gap-4">
               <button
                 type="submit"
-                className="bg-gradient-to-r from-[#022d58] to-[#003c96] text-white px-8 py-3 rounded-xl font-semibold shadow-lg hover:shadow-xl transform hover:-translate-y-1 transition-all duration-300 flex items-center gap-2"
+                disabled={isSubmitting}
+                className="bg-gradient-to-r from-[#022d58] to-[#003c96] text-white px-8 py-3 rounded-xl font-semibold shadow-lg hover:shadow-xl transform hover:-translate-y-1 transition-all duration-300 flex items-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed disabled:transform-none"
               >
-                {editId ? "Update" : "Add"} Testimonial
+                {isSubmitting ? (
+                  <>
+                    <Loader2 size={20} className="animate-spin" />
+                    {editId ? "Updating..." : "Creating..."}
+                  </>
+                ) : (
+                  <>
+                    {editId ? "Update" : "Add"} Testimonial
+                  </>
+                )}
               </button>
               {editId && (
                 <button
                   type="button"
                   onClick={resetForm}
-                  className="px-8 py-3 border-2 border-[#022d58]/20 text-[#022d58] rounded-xl font-semibold hover:bg-[#022d58]/5 transition-all duration-300"
+                  disabled={isSubmitting}
+                  className="px-8 py-3 border-2 border-[#022d58]/20 text-[#022d58] rounded-xl font-semibold hover:bg-[#022d58]/5 transition-all duration-300 disabled:opacity-50 disabled:cursor-not-allowed"
                 >
                   Cancel
                 </button>
@@ -312,7 +352,7 @@ export default function TestimonialsAdminPage() {
           </div>
         ) : (
           <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-            {testimonials.map((testimonial) => (
+            {(testimonials || []).map((testimonial) => (
               <div
                 key={testimonial._id}
                 className="bg-gradient-to-br from-[#022d58]/5 to-[#003c96]/5 p-6 rounded-3xl border-2 border-[#022d58]/20 hover:shadow-lg transition-all duration-300"
@@ -330,17 +370,23 @@ export default function TestimonialsAdminPage() {
                   <div className="flex gap-2">
                     <button
                       onClick={() => handleEdit(testimonial)}
-                      className="p-2 text-[#022d58] hover:bg-[#022d58]/10 rounded-lg transition-colors"
+                      disabled={isSubmitting || deletingTestimonial === testimonial._id}
+                      className="p-2 text-[#022d58] hover:bg-[#022d58]/10 rounded-lg transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
                       title="Edit testimonial"
                     >
                       <Edit size={18} />
                     </button>
                     <button
                       onClick={() => handleDelete(testimonial._id!)}
-                      className="p-2 text-red-600 hover:bg-red-50 rounded-lg transition-colors"
+                      disabled={isSubmitting || deletingTestimonial === testimonial._id}
+                      className="p-2 text-red-600 hover:bg-red-50 rounded-lg transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
                       title="Delete testimonial"
                     >
-                      <Trash2 size={18} />
+                      {deletingTestimonial === testimonial._id ? (
+                        <Loader2 size={18} className="animate-spin" />
+                      ) : (
+                        <Trash2 size={18} />
+                      )}
                     </button>
                   </div>
                 </div>

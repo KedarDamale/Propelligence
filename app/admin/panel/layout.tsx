@@ -1,8 +1,9 @@
 "use client";
-import { useEffect } from "react";
+import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
 import Image from "next/image";
+import { HardDrive } from "lucide-react";
 
 const sidebarLinks = [
   { name: "Services", href: "/admin/panel/services" },
@@ -12,11 +13,75 @@ const sidebarLinks = [
 
 export default function AdminPanelLayout({ children }: { children: React.ReactNode }) {
   const router = useRouter();
+  const [storageUsage, setStorageUsage] = useState<any>(null);
+  const [loading, setLoading] = useState(true);
+  const [isAuthenticated, setIsAuthenticated] = useState(false);
+
   useEffect(() => {
-    if (typeof window !== "undefined" && localStorage.getItem("admin-auth") !== "true") {
+    // Check authentication status
+    async function checkAuth() {
+      try {
+        const response = await fetch('/api/auth/check');
+        if (response.ok) {
+          setIsAuthenticated(true);
+        } else {
+          router.push("/admin/login");
+        }
+      } catch (error) {
+        router.push("/admin/login");
+      }
+    }
+    
+    checkAuth();
+  }, [router]);
+
+  useEffect(() => {
+    async function fetchStorageUsage() {
+      try {
+        const response = await fetch('/api/storage/usage');
+        if (response.ok) {
+          const data = await response.json();
+          setStorageUsage(data);
+        } else if (response.status === 503) {
+          // Token not configured - this is expected in development
+          console.log('Vercel Blob token not configured - storage monitoring disabled');
+        }
+      } catch (error) {
+        console.error('Failed to fetch storage usage:', error);
+      } finally {
+        setLoading(false);
+      }
+    }
+
+    if (isAuthenticated) {
+      fetchStorageUsage();
+    }
+  }, [isAuthenticated]);
+
+  const handleLogout = async () => {
+    try {
+      // Clear the authentication cookie
+      await fetch("/api/auth/set-cookie", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ authenticated: false }),
+      });
+      
+      router.push("/admin/login");
+    } catch (error) {
+      console.error('Logout failed:', error);
       router.push("/admin/login");
     }
-  }, [router]);
+  };
+
+  // Show loading while checking authentication
+  if (!isAuthenticated) {
+    return (
+      <div className="flex min-h-screen bg-gradient-to-br from-[#ee800227] to-[#01ff5a49] items-center justify-center">
+        <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-[#022d58]"></div>
+      </div>
+    );
+  }
 
   return (
     <div className="flex min-h-screen bg-gradient-to-br from-[#ee800227] to-[#01ff5a49]">
@@ -59,13 +124,47 @@ export default function AdminPanelLayout({ children }: { children: React.ReactNo
           ))}
         </nav>
         
+        {/* Storage Usage */}
+        {storageUsage && (
+          <div className="mt-6 p-4 bg-gradient-to-br from-[#022d58]/5 to-[#003c96]/5 rounded-xl border-2 border-[#022d58]/20">
+            <div className="flex items-center gap-2 mb-3">
+              <HardDrive size={16} className="text-[#022d58]" />
+              <h3 className="text-sm font-semibold text-[#022d58]">Storage Usage</h3>
+            </div>
+            <div className="space-y-2">
+              <div className="flex justify-between text-xs">
+                <span className="text-gray-600">Used:</span>
+                <span className="font-medium text-[#022d58]">
+                  {storageUsage.totalSizeGB.toFixed(2)} GB
+                </span>
+              </div>
+              <div className="flex justify-between text-xs">
+                <span className="text-gray-600">Free Tier:</span>
+                <span className="font-medium text-[#022d58]">1 GB</span>
+              </div>
+              <div className="w-full bg-gray-200 rounded-full h-2">
+                <div 
+                  className={`h-2 rounded-full transition-all duration-300 ${
+                    storageUsage.usagePercentage > 90 
+                      ? 'bg-red-500' 
+                      : storageUsage.usagePercentage > 75 
+                      ? 'bg-yellow-500' 
+                      : 'bg-green-500'
+                  }`}
+                  style={{ width: `${Math.min(storageUsage.usagePercentage, 100)}%` }}
+                ></div>
+              </div>
+              <div className="text-xs text-center text-gray-600">
+                {storageUsage.usagePercentage.toFixed(1)}% used
+              </div>
+            </div>
+          </div>
+        )}
+
         {/* Logout Button */}
-        <div className="mt-auto pt-6 border-t-2 border-[#022d58]/10 pb-4">
+        <div className="mt-auto">
           <button 
-            onClick={() => {
-              localStorage.removeItem("admin-auth");
-              router.push("/admin/login");
-            }}
+            onClick={handleLogout}
             className="w-full bg-gradient-to-r from-red-600 to-red-700 text-white py-3 rounded-xl font-semibold shadow-lg hover:shadow-xl transform hover:-translate-y-1 transition-all duration-300 flex items-center justify-center gap-2 relative z-10"
           >
             <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">

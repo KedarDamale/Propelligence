@@ -1,6 +1,7 @@
 "use client";
 import React, { useEffect, useRef, useState, useCallback } from "react";
-import { Plus, Edit, Trash2, FileText, X, CheckCircle, AlertCircle } from "lucide-react";
+import { Plus, Edit, Trash2, FileText, X, CheckCircle, AlertCircle, Loader2 } from "lucide-react";
+import { authenticatedFetch } from "@/lib/auth";
 
 interface Service {
   _id?: string;
@@ -27,9 +28,15 @@ export default function ServicesAdminPage() {
   });
   const [pdf, setPdf] = useState<File | null>(null);
   const [editId, setEditId] = useState<string | null>(null);
+  const [currentPdfUrl, setCurrentPdfUrl] = useState<string | null>(null);
   const [error, setError] = useState("");
   const [notifications, setNotifications] = useState<Notification[]>([]);
   const fileInputRef = useRef<HTMLInputElement>(null);
+  const [storageType, setStorageType] = useState<'blob' | 'base64'>('blob');
+  
+  // Loading states
+  const [isSubmitting, setIsSubmitting] = useState(false);
+  const [deletingService, setDeletingService] = useState<string | null>(null);
 
   const addNotification = useCallback((type: 'success' | 'error', message: string) => {
     const id = Date.now().toString();
@@ -45,10 +52,20 @@ export default function ServicesAdminPage() {
   const fetchServices = useCallback(async () => {
     setLoading(true);
     try {
-      const res = await fetch("/api/services");
+      const res = await authenticatedFetch("/api/services");
+      if (res.status === 401) {
+        // Redirect to login if unauthorized
+        window.location.href = '/admin/login';
+        return;
+      }
       const data = await res.json();
       setServices(data);
-    } catch {
+    } catch (error) {
+      console.error('Failed to load services:', error);
+      if (error instanceof Error && error.message === 'Authentication token not available') {
+        window.location.href = '/admin/login';
+        return;
+      }
       addNotification('error', 'Failed to load services');
     } finally {
       setLoading(false);
@@ -78,17 +95,31 @@ export default function ServicesAdminPage() {
       return;
     }
     
+    setIsSubmitting(true);
+    
     try {
       if (editId) {
-        // Update (no PDF update for simplicity)
-        const updateResponse = await fetch(`/api/services/${editId}`, {
+        // Update with optional PDF
+        const fd = new FormData();
+        fd.append("serviceId", editId);
+        fd.append("title", form.title);
+        fd.append("short_desc", form.short_desc);
+        fd.append("long_desc", form.long_desc);
+        if (currentPdfUrl) {
+          fd.append("currentPdfUrl", currentPdfUrl);
+        }
+        if (pdf) {
+          fd.append("pdf", pdf);
+        }
+        
+        const updateResponse = await authenticatedFetch("/api/services/update-with-pdf", {
           method: "PUT",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify(form),
+          body: fd,
         });
         
         if (!updateResponse.ok) {
-          throw new Error('Update failed');
+          const errorData = await updateResponse.json().catch(() => ({}));
+          throw new Error(errorData.error || 'Update failed');
         }
         
         addNotification('success', 'Service updated successfully!');
@@ -102,12 +133,12 @@ export default function ServicesAdminPage() {
           fd.append("long_desc", form.long_desc);
           fd.append("pdf", pdf);
           
-          response = await fetch("/api/services/upload", {
+          response = await authenticatedFetch("/api/services/upload", {
             method: "POST",
             body: fd,
           });
         } else {
-          response = await fetch("/api/services", {
+          response = await authenticatedFetch("/api/services", {
             method: "POST",
             headers: { "Content-Type": "application/json" },
             body: JSON.stringify(form),
@@ -125,6 +156,7 @@ export default function ServicesAdminPage() {
       setForm({ title: "", short_desc: "", long_desc: "" });
       setPdf(null);
       setEditId(null);
+      setCurrentPdfUrl(null);
       setShowForm(false);
       if (fileInputRef.current) fileInputRef.current.value = "";
       fetchServices();
@@ -132,6 +164,8 @@ export default function ServicesAdminPage() {
       console.error('Service operation error:', error);
       const errorMessage = error instanceof Error ? error.message : 'Unknown error occurred';
       addNotification('error', editId ? 'Failed to update service' : `Failed to create service: ${errorMessage}`);
+    } finally {
+      setIsSubmitting(false);
     }
   }
 
@@ -142,18 +176,28 @@ export default function ServicesAdminPage() {
       long_desc: s.long_desc,
     });
     setEditId(s._id!);
+    setCurrentPdfUrl(s.pdfUrl || null);
+    setPdf(null);
     setShowForm(true);
   }
 
-  async function handleDelete(id: string) {
+  async function handleDelete(id: string, pdfUrl?: string) {
     if (!confirm("Are you sure you want to delete this service?")) return;
     
+    setDeletingService(id);
+    
     try {
-      await fetch(`/api/services/${id}`, { method: "DELETE" });
+      // Use the enhanced delete route that also removes PDF from blob storage
+      const params = new URLSearchParams({ id });
+      if (pdfUrl) params.append('pdfUrl', pdfUrl);
+      
+      await authenticatedFetch(`/api/services/delete-pdf?${params.toString()}`, { method: "DELETE" });
       addNotification('success', 'Service deleted successfully!');
       fetchServices();
     } catch {
       addNotification('error', 'Failed to delete service');
+    } finally {
+      setDeletingService(null);
     }
   }
 
@@ -161,8 +205,10 @@ export default function ServicesAdminPage() {
     setForm({ title: "", short_desc: "", long_desc: "" });
     setPdf(null);
     setEditId(null);
+    setCurrentPdfUrl(null);
     setShowForm(false);
     setError("");
+    setStorageType('blob');
     if (fileInputRef.current) fileInputRef.current.value = "";
   }
 
@@ -205,13 +251,16 @@ export default function ServicesAdminPage() {
             Create, edit, and manage your financial services
           </p>
         </div>
-        <button
-          onClick={() => setShowForm(true)}
-          className="bg-gradient-to-r from-[#022d58] to-[#003c96] text-white px-6 py-3 rounded-xl font-semibold shadow-lg hover:shadow-xl transform hover:-translate-y-1 transition-all duration-300 flex items-center gap-2"
-        >
-          <Plus size={20} />
-          Add New Service
-        </button>
+        <div className="flex gap-2">
+          <button
+            onClick={() => setShowForm(true)}
+            disabled={isSubmitting}
+            className="bg-gradient-to-r from-[#022d58] to-[#003c96] text-white px-6 py-3 rounded-xl font-semibold shadow-lg hover:shadow-xl transform hover:-translate-y-1 transition-all duration-300 flex items-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed disabled:transform-none"
+          >
+            <Plus size={20} />
+            Add New Service
+          </button>
+        </div>
       </div>
 
       {/* Form */}
@@ -223,7 +272,8 @@ export default function ServicesAdminPage() {
             </h2>
             <button
               onClick={resetForm}
-              className="text-gray-500 hover:text-[#022d58] transition-colors"
+              disabled={isSubmitting}
+              className="text-gray-500 hover:text-[#022d58] transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
             >
               <X size={24} />
             </button>
@@ -240,7 +290,8 @@ export default function ServicesAdminPage() {
                   value={form.title}
                   onChange={handleChange}
                   placeholder="Enter service title"
-                  className="w-full p-4 border-2 border-[#022d58]/20 rounded-xl bg-white/50 backdrop-blur-sm focus:border-[#022d58] focus:outline-none transition-all duration-300 text-[#022d58] placeholder-gray-500"
+                  disabled={isSubmitting}
+                  className="w-full p-4 border-2 border-[#022d58]/20 rounded-xl bg-white/50 backdrop-blur-sm focus:border-[#022d58] focus:outline-none transition-all duration-300 text-[#022d58] placeholder-gray-500 disabled:opacity-50 disabled:cursor-not-allowed"
                   required
                 />
               </div>
@@ -254,7 +305,8 @@ export default function ServicesAdminPage() {
                   value={form.short_desc}
                   onChange={handleChange}
                   placeholder="Brief description"
-                  className="w-full p-4 border-2 border-[#022d58]/20 rounded-xl bg-white/50 backdrop-blur-sm focus:border-[#022d58] focus:outline-none transition-all duration-300 text-[#022d58] placeholder-gray-500"
+                  disabled={isSubmitting}
+                  className="w-full p-4 border-2 border-[#022d58]/20 rounded-xl bg-white/50 backdrop-blur-sm focus:border-[#022d58] focus:outline-none transition-all duration-300 text-[#022d58] placeholder-gray-500 disabled:opacity-50 disabled:cursor-not-allowed"
                   required
                 />
               </div>
@@ -270,25 +322,43 @@ export default function ServicesAdminPage() {
                 onChange={handleChange}
                 placeholder="Detailed service description"
                 rows={4}
-                className="w-full p-4 border-2 border-[#022d58]/20 rounded-xl bg-white/50 backdrop-blur-sm focus:border-[#022d58] focus:outline-none transition-all duration-300 text-[#022d58] placeholder-gray-500 resize-none"
+                disabled={isSubmitting}
+                className="w-full p-4 border-2 border-[#022d58]/20 rounded-xl bg-white/50 backdrop-blur-sm focus:border-[#022d58] focus:outline-none transition-all duration-300 text-[#022d58] placeholder-gray-500 resize-none disabled:opacity-50 disabled:cursor-not-allowed"
                 required
               />
             </div>
             
-            {!editId && (
-              <div>
-                <label className="block text-sm font-semibold text-[#022d58] mb-2">
-                  Service PDF (Optional)
-                </label>
-                <input
-                  type="file"
-                  accept="application/pdf"
-                  onChange={handleFileChange}
-                  ref={fileInputRef}
-                  className="w-full p-4 border-2 border-[#022d58]/20 rounded-xl bg-white/50 backdrop-blur-sm focus:border-[#022d58] focus:outline-none transition-all duration-300 text-[#022d58] file:mr-4 file:py-2 file:px-4 file:rounded-full file:border-0 file:text-sm file:font-semibold file:bg-[#022d58] file:text-white hover:file:bg-[#003c96]"
-                />
-              </div>
-            )}
+            <div>
+              <label className="block text-sm font-semibold text-[#022d58] mb-2">
+                {editId ? "Update" : "Add"} Service PDF {editId && "(Optional - leave empty to keep current PDF)"}
+              </label>
+              {editId && currentPdfUrl && (
+                <div className="mb-3 p-3 bg-blue-50 border border-blue-200 rounded-lg">
+                  <p className="text-sm text-blue-800 mb-2">
+                    <strong>Current PDF:</strong>
+                  </p>
+                  <a
+                    href={currentPdfUrl}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="text-blue-600 hover:text-blue-800 underline text-sm"
+                  >
+                    View Current PDF
+                  </a>
+                </div>
+              )}
+              <input
+                type="file"
+                accept="application/pdf"
+                onChange={handleFileChange}
+                ref={fileInputRef}
+                disabled={isSubmitting}
+                className="w-full p-4 border-2 border-[#022d58]/20 rounded-xl bg-white/50 backdrop-blur-sm focus:border-[#022d58] focus:outline-none transition-all duration-300 text-[#022d58] file:mr-4 file:py-2 file:px-4 file:rounded-full file:border-0 file:text-sm file:font-semibold file:bg-[#022d58] file:text-white hover:file:bg-[#003c96] disabled:opacity-50 disabled:cursor-not-allowed"
+              />
+              <p className="text-xs text-gray-500 mt-1">
+                Maximum file size: 10MB. Only PDF files are allowed.
+              </p>
+            </div>
             
             {error && (
               <div className="p-4 bg-red-50 border-2 border-red-200 rounded-xl text-red-600 text-center font-medium">
@@ -299,15 +369,26 @@ export default function ServicesAdminPage() {
             <div className="flex gap-4">
               <button
                 type="submit"
-                className="bg-gradient-to-r from-[#022d58] to-[#003c96] text-white px-8 py-3 rounded-xl font-semibold shadow-lg hover:shadow-xl transform hover:-translate-y-1 transition-all duration-300 flex items-center gap-2"
+                disabled={isSubmitting}
+                className="bg-gradient-to-r from-[#022d58] to-[#003c96] text-white px-8 py-3 rounded-xl font-semibold shadow-lg hover:shadow-xl transform hover:-translate-y-1 transition-all duration-300 flex items-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed disabled:transform-none"
               >
-                {editId ? "Update" : "Add"} Service
+                {isSubmitting ? (
+                  <>
+                    <Loader2 size={20} className="animate-spin" />
+                    {editId ? "Updating..." : "Creating..."}
+                  </>
+                ) : (
+                  <>
+                    {editId ? "Update" : "Add"} Service
+                  </>
+                )}
               </button>
               {editId && (
                 <button
                   type="button"
                   onClick={resetForm}
-                  className="px-8 py-3 border-2 border-[#022d58]/20 text-[#022d58] rounded-xl font-semibold hover:bg-[#022d58]/5 transition-all duration-300"
+                  disabled={isSubmitting}
+                  className="px-8 py-3 border-2 border-[#022d58]/20 text-[#022d58] rounded-xl font-semibold hover:bg-[#022d58]/5 transition-all duration-300 disabled:opacity-50 disabled:cursor-not-allowed"
                 >
                   Cancel
                 </button>
@@ -346,17 +427,23 @@ export default function ServicesAdminPage() {
                   <div className="flex gap-2">
                     <button
                       onClick={() => handleEdit(service)}
-                      className="p-2 text-[#022d58] hover:bg-[#022d58]/10 rounded-lg transition-colors"
+                      disabled={isSubmitting || deletingService === service._id}
+                      className="p-2 text-[#022d58] hover:bg-[#022d58]/10 rounded-lg transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
                       title="Edit service"
                     >
                       <Edit size={18} />
                     </button>
                     <button
-                      onClick={() => handleDelete(service._id!)}
-                      className="p-2 text-red-600 hover:bg-red-50 rounded-lg transition-colors"
+                      onClick={() => handleDelete(service._id!, service.pdfUrl)}
+                      disabled={isSubmitting || deletingService === service._id}
+                      className="p-2 text-red-600 hover:bg-red-50 rounded-lg transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
                       title="Delete service"
                     >
-                      <Trash2 size={18} />
+                      {deletingService === service._id ? (
+                        <Loader2 size={18} className="animate-spin" />
+                      ) : (
+                        <Trash2 size={18} />
+                      )}
                     </button>
                   </div>
                 </div>

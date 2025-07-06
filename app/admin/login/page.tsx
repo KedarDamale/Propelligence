@@ -7,22 +7,39 @@ export default function AdminLogin() {
   const [username, setUsername] = useState("");
   const [password, setPassword] = useState("");
   const [error, setError] = useState("");
+  const [isLoading, setIsLoading] = useState(false);
   const router = useRouter();
 
   const handleSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
     setError("");
-    const res = await fetch("/api/auth/login", {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ username, password }),
-    });
-    const data = await res.json();
-    if (data.success) {
-      localStorage.setItem("admin-auth", "true");
-      router.push("/admin/panel");
-    } else {
-      setError("Invalid credentials");
+    setIsLoading(true);
+    
+    try {
+      const res = await fetch("/api/auth/login", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ username, password }),
+      });
+      
+      const data = await res.json();
+      
+      if (data.authenticated) {
+        // Set secure HTTP-only cookie via API
+        await fetch("/api/auth/set-cookie", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ authenticated: true }),
+        });
+        
+        router.push("/admin/panel");
+      } else {
+        setError(data.message || "Invalid credentials");
+      }
+    } catch (err) {
+      setError("Login failed. Please try again.");
+    } finally {
+      setIsLoading(false);
     }
   };
 
@@ -50,7 +67,7 @@ export default function AdminLogin() {
           </div>
 
           {/* Right Side - Login Form */}
-          <div className="flex justify-center md:justify-end">
+          <div className="flex justify-center">
             <form onSubmit={handleSubmit} className="bg-white/95 backdrop-blur-md p-6 md:p-8 rounded-3xl shadow-2xl border-2 border-[#022d58]/20 w-full max-w-sm md:max-w-md">
               <div className="text-center mb-6 md:mb-8">
                 <h2 className="text-2xl md:text-3xl font-bold text-[#022d58] mb-2">Admin Login</h2>
@@ -68,7 +85,8 @@ export default function AdminLogin() {
                     placeholder="Enter your username"
                     value={username}
                     onChange={e => setUsername(e.target.value)}
-                    className="w-full p-3 md:p-4 border-2 border-[#022d58]/20 rounded-xl bg-white/50 backdrop-blur-sm focus:border-[#022d58] focus:outline-none transition-all duration-300 text-[#022d58] placeholder-gray-500 text-sm md:text-base"
+                    disabled={isLoading}
+                    className="w-full p-3 md:p-4 border-2 border-[#022d58]/20 rounded-xl bg-white/50 backdrop-blur-sm focus:border-[#022d58] focus:outline-none transition-all duration-300 text-[#022d58] placeholder-gray-500 text-sm md:text-base disabled:opacity-50 disabled:cursor-not-allowed"
                     required
                   />
                 </div>
@@ -83,7 +101,8 @@ export default function AdminLogin() {
                     placeholder="Enter your password"
                     value={password}
                     onChange={e => setPassword(e.target.value)}
-                    className="w-full p-3 md:p-4 border-2 border-[#022d58]/20 rounded-xl bg-white/50 backdrop-blur-sm focus:border-[#022d58] focus:outline-none transition-all duration-300 text-[#022d58] placeholder-gray-500 text-sm md:text-base"
+                    disabled={isLoading}
+                    className="w-full p-3 md:p-4 border-2 border-[#022d58]/20 rounded-xl bg-white/50 backdrop-blur-sm focus:border-[#022d58] focus:outline-none transition-all duration-300 text-[#022d58] placeholder-gray-500 text-sm md:text-base disabled:opacity-50 disabled:cursor-not-allowed"
                     required
                   />
                 </div>
@@ -96,9 +115,10 @@ export default function AdminLogin() {
                 
                 <button 
                   type="submit" 
-                  className="w-full bg-gradient-to-r from-[#022d58] to-[#003c96] text-white py-3 md:py-4 rounded-xl font-semibold text-base md:text-lg shadow-2xl hover:shadow-3xl transform hover:-translate-y-1 transition-all duration-300"
+                  disabled={isLoading}
+                  className="w-full bg-gradient-to-r from-[#022d58] to-[#003c96] text-white py-3 md:py-4 rounded-xl font-semibold text-base md:text-lg shadow-2xl hover:shadow-3xl transform hover:-translate-y-1 transition-all duration-300 disabled:opacity-50 disabled:cursor-not-allowed disabled:transform-none"
                 >
-                  Sign In
+                  {isLoading ? 'Signing In...' : 'Sign In'}
                 </button>
               </div>
               

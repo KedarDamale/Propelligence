@@ -1,6 +1,7 @@
 "use client";
 import { useEffect, useState, useRef, useCallback } from "react";
-import { Plus, Edit, Trash2, FileText, X, CheckCircle, AlertCircle, Search, Calendar, ArrowUpDown } from "lucide-react";
+import { Plus, Edit, Trash2, FileText, X, CheckCircle, AlertCircle, Search, Calendar, ArrowUpDown, Loader2 } from "lucide-react";
+import { authenticatedFetch } from "../../../../lib/auth";
 
 interface Blog {
   _id?: string;
@@ -33,11 +34,16 @@ export default function BlogsAdminPage() {
   });
   const [pdf, setPdf] = useState<File | null>(null);
   const [editId, setEditId] = useState<string | null>(null);
+  const [currentPdfUrl, setCurrentPdfUrl] = useState<string | null>(null);
   const [error, setError] = useState("");
   const [search, setSearch] = useState("");
   const [sortOrder, setSortOrder] = useState<SortOrder>('newest');
   const [notifications, setNotifications] = useState<Notification[]>([]);
   const fileInputRef = useRef<HTMLInputElement>(null);
+  
+  // Loading states
+  const [isSubmitting, setIsSubmitting] = useState(false);
+  const [deletingBlog, setDeletingBlog] = useState<string | null>(null);
 
   const addNotification = useCallback((type: 'success' | 'error', message: string) => {
     const id = Date.now().toString();
@@ -53,10 +59,20 @@ export default function BlogsAdminPage() {
   const fetchBlogs = useCallback(async () => {
     setLoading(true);
     try {
-      const res = await fetch(`/api/blogs?sort=${sortOrder}`);
+      const res = await authenticatedFetch(`/api/blogs?sort=${sortOrder}`);
+      if (res.status === 401) {
+        // Redirect to login if unauthorized
+        window.location.href = '/admin/login';
+        return;
+      }
       const data = await res.json();
       setBlogs(data);
-    } catch {
+    } catch (error) {
+      console.error('Failed to load blogs:', error);
+      if (error instanceof Error && error.message === 'Authentication token not available') {
+        window.location.href = '/admin/login';
+        return;
+      }
       addNotification('error', 'Failed to load blogs');
     } finally {
       setLoading(false);
@@ -86,6 +102,8 @@ export default function BlogsAdminPage() {
       return;
     }
     
+    setIsSubmitting(true);
+    
     try {
       // Convert keywords string to array on submit
       const cleanForm = {
@@ -97,12 +115,30 @@ export default function BlogsAdminPage() {
       };
       
       if (editId) {
-        // Update blog (no PDF update for simplicity)
-        await fetch(`/api/blogs/${editId}`, {
+        // Update with optional PDF
+        const fd = new FormData();
+        fd.append("blogId", editId);
+        fd.append("title", form.title);
+        fd.append("short_desc", form.description); // Note: API expects short_desc for blogs
+        fd.append("long_desc", form.description); // Note: API expects long_desc for blogs
+        fd.append("keywords", cleanForm.keywords.join(","));
+        if (currentPdfUrl) {
+          fd.append("currentPdfUrl", currentPdfUrl);
+        }
+        if (pdf) {
+          fd.append("pdf", pdf);
+        }
+        
+        const updateResponse = await authenticatedFetch("/api/blogs/update-with-pdf", {
           method: "PUT",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify(cleanForm),
+          body: fd,
         });
+        
+        if (!updateResponse.ok) {
+          const errorData = await updateResponse.json().catch(() => ({}));
+          throw new Error(errorData.error || 'Update failed');
+        }
+        
         addNotification('success', 'Blog updated successfully!');
       } else {
         // Create blog (with optional PDF)
@@ -112,12 +148,12 @@ export default function BlogsAdminPage() {
           fd.append("description", form.description);
           fd.append("pdf", pdf);
           fd.append("keywords", cleanForm.keywords.join(","));
-          await fetch("/api/blogs/upload", {
+          await authenticatedFetch("/api/blogs/upload", {
             method: "POST",
             body: fd,
           });
         } else {
-          await fetch("/api/blogs", {
+          await authenticatedFetch("/api/blogs", {
             method: "POST",
             headers: { "Content-Type": "application/json" },
             body: JSON.stringify(cleanForm),
@@ -129,11 +165,16 @@ export default function BlogsAdminPage() {
       setForm({ title: "", description: "", keywords: "" });
       setPdf(null);
       setEditId(null);
+      setCurrentPdfUrl(null);
       setShowForm(false);
       if (fileInputRef.current) fileInputRef.current.value = "";
       fetchBlogs();
-    } catch {
-      addNotification('error', editId ? 'Failed to update blog' : 'Failed to create blog');
+    } catch (error) {
+      console.error('Blog operation error:', error);
+      const errorMessage = error instanceof Error ? error.message : 'Unknown error occurred';
+      addNotification('error', editId ? 'Failed to update blog' : `Failed to create blog: ${errorMessage}`);
+    } finally {
+      setIsSubmitting(false);
     }
   }
 
@@ -144,18 +185,28 @@ export default function BlogsAdminPage() {
       keywords: (b.keywords || []).join(", "),
     });
     setEditId(b._id!);
+    setCurrentPdfUrl(b.pdfUrl || null);
+    setPdf(null);
     setShowForm(true);
   }
 
-  async function handleDelete(id: string) {
+  async function handleDelete(id: string, pdfUrl?: string) {
     if (!confirm("Are you sure you want to delete this blog?")) return;
     
+    setDeletingBlog(id);
+    
     try {
-      await fetch(`/api/blogs/${id}`, { method: "DELETE" });
+      // Use the enhanced delete route that also removes PDF from blob storage
+      const params = new URLSearchParams({ id });
+      if (pdfUrl) params.append('pdfUrl', pdfUrl);
+      
+      await authenticatedFetch(`/api/blogs/delete-pdf?${params.toString()}`, { method: "DELETE" });
       addNotification('success', 'Blog deleted successfully!');
       fetchBlogs();
     } catch {
       addNotification('error', 'Failed to delete blog');
+    } finally {
+      setDeletingBlog(null);
     }
   }
 
@@ -163,13 +214,14 @@ export default function BlogsAdminPage() {
     setForm({ title: "", description: "", keywords: "" });
     setPdf(null);
     setEditId(null);
+    setCurrentPdfUrl(null);
     setShowForm(false);
     setError("");
     if (fileInputRef.current) fileInputRef.current.value = "";
   }
 
   // Filter blogs by search
-  const filteredBlogs = blogs.filter((b) =>
+  const filteredBlogs = (blogs || []).filter((b) =>
     search.trim()
       ? (b.keywords || []).some((k) =>
           k.toLowerCase().includes(search.toLowerCase())
@@ -235,7 +287,8 @@ export default function BlogsAdminPage() {
         </div>
         <button
           onClick={() => setShowForm(true)}
-          className="bg-gradient-to-r from-[#022d58] to-[#003c96] text-white px-6 py-3 rounded-xl font-semibold shadow-lg hover:shadow-xl transform hover:-translate-y-1 transition-all duration-300 flex items-center gap-2"
+          disabled={isSubmitting}
+          className="bg-gradient-to-r from-[#022d58] to-[#003c96] text-white px-6 py-3 rounded-xl font-semibold shadow-lg hover:shadow-xl transform hover:-translate-y-1 transition-all duration-300 flex items-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed disabled:transform-none"
         >
           <Plus size={20} />
           Add New Blog
@@ -251,7 +304,8 @@ export default function BlogsAdminPage() {
             </h2>
             <button
               onClick={resetForm}
-              className="text-gray-500 hover:text-[#022d58] transition-colors"
+              disabled={isSubmitting}
+              className="text-gray-500 hover:text-[#022d58] transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
             >
               <X size={24} />
             </button>
@@ -267,7 +321,8 @@ export default function BlogsAdminPage() {
                 value={form.title}
                 onChange={handleChange}
                 placeholder="Enter blog title"
-                className="w-full p-4 border-2 border-[#022d58]/20 rounded-xl bg-white/50 backdrop-blur-sm focus:border-[#022d58] focus:outline-none transition-all duration-300 text-[#022d58] placeholder-gray-500"
+                disabled={isSubmitting}
+                className="w-full p-4 border-2 border-[#022d58]/20 rounded-xl bg-white/50 backdrop-blur-sm focus:border-[#022d58] focus:outline-none transition-all duration-300 text-[#022d58] placeholder-gray-500 disabled:opacity-50 disabled:cursor-not-allowed"
                 required
               />
             </div>
@@ -282,7 +337,8 @@ export default function BlogsAdminPage() {
                 onChange={handleChange}
                 placeholder="Enter blog description"
                 rows={4}
-                className="w-full p-4 border-2 border-[#022d58]/20 rounded-xl bg-white/50 backdrop-blur-sm focus:border-[#022d58] focus:outline-none transition-all duration-300 text-[#022d58] placeholder-gray-500 resize-none"
+                disabled={isSubmitting}
+                className="w-full p-4 border-2 border-[#022d58]/20 rounded-xl bg-white/50 backdrop-blur-sm focus:border-[#022d58] focus:outline-none transition-all duration-300 text-[#022d58] placeholder-gray-500 resize-none disabled:opacity-50 disabled:cursor-not-allowed"
                 required
               />
             </div>
@@ -296,24 +352,42 @@ export default function BlogsAdminPage() {
                 value={form.keywords}
                 onChange={handleChange}
                 placeholder="Enter keywords separated by commas"
-                className="w-full p-4 border-2 border-[#022d58]/20 rounded-xl bg-white/50 backdrop-blur-sm focus:border-[#022d58] focus:outline-none transition-all duration-300 text-[#022d58] placeholder-gray-500"
+                disabled={isSubmitting}
+                className="w-full p-4 border-2 border-[#022d58]/20 rounded-xl bg-white/50 backdrop-blur-sm focus:border-[#022d58] focus:outline-none transition-all duration-300 text-[#022d58] placeholder-gray-500 disabled:opacity-50 disabled:cursor-not-allowed"
               />
             </div>
             
-            {!editId && (
-              <div>
-                <label className="block text-sm font-semibold text-[#022d58] mb-2">
-                  Blog PDF (Optional)
-                </label>
-                <input
-                  type="file"
-                  accept="application/pdf"
-                  onChange={handleFileChange}
-                  ref={fileInputRef}
-                  className="w-full p-4 border-2 border-[#022d58]/20 rounded-xl bg-white/50 backdrop-blur-sm focus:border-[#022d58] focus:outline-none transition-all duration-300 text-[#022d58] file:mr-4 file:py-2 file:px-4 file:rounded-full file:border-0 file:text-sm file:font-semibold file:bg-[#022d58] file:text-white hover:file:bg-[#003c96]"
-                />
-              </div>
-            )}
+            <div>
+              <label className="block text-sm font-semibold text-[#022d58] mb-2">
+                {editId ? "Update" : "Add"} Blog PDF {editId && "(Optional - leave empty to keep current PDF)"}
+              </label>
+              {editId && currentPdfUrl && (
+                <div className="mb-3 p-3 bg-blue-50 border border-blue-200 rounded-lg">
+                  <p className="text-sm text-blue-800 mb-2">
+                    <strong>Current PDF:</strong>
+                  </p>
+                  <a
+                    href={currentPdfUrl}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="text-blue-600 hover:text-blue-800 underline text-sm"
+                  >
+                    View Current PDF
+                  </a>
+                </div>
+              )}
+              <input
+                type="file"
+                accept="application/pdf"
+                onChange={handleFileChange}
+                ref={fileInputRef}
+                disabled={isSubmitting}
+                className="w-full p-4 border-2 border-[#022d58]/20 rounded-xl bg-white/50 backdrop-blur-sm focus:border-[#022d58] focus:outline-none transition-all duration-300 text-[#022d58] file:mr-4 file:py-2 file:px-4 file:rounded-full file:border-0 file:text-sm file:font-semibold file:bg-[#022d58] file:text-white hover:file:bg-[#003c96] disabled:opacity-50 disabled:cursor-not-allowed"
+              />
+              <p className="text-xs text-gray-500 mt-1">
+                Maximum file size: 8MB. Only PDF files are allowed.
+              </p>
+            </div>
             
             {error && (
               <div className="p-4 bg-red-50 border-2 border-red-200 rounded-xl text-red-600 text-center font-medium">
@@ -324,15 +398,26 @@ export default function BlogsAdminPage() {
             <div className="flex gap-4">
               <button
                 type="submit"
-                className="bg-gradient-to-r from-[#022d58] to-[#003c96] text-white px-8 py-3 rounded-xl font-semibold shadow-lg hover:shadow-xl transform hover:-translate-y-1 transition-all duration-300 flex items-center gap-2"
+                disabled={isSubmitting}
+                className="bg-gradient-to-r from-[#022d58] to-[#003c96] text-white px-8 py-3 rounded-xl font-semibold shadow-lg hover:shadow-xl transform hover:-translate-y-1 transition-all duration-300 flex items-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed disabled:transform-none"
               >
-                {editId ? "Update" : "Add"} Blog
+                {isSubmitting ? (
+                  <>
+                    <Loader2 size={20} className="animate-spin" />
+                    {editId ? "Updating..." : "Creating..."}
+                  </>
+                ) : (
+                  <>
+                    {editId ? "Update" : "Add"} Blog
+                  </>
+                )}
               </button>
               {editId && (
                 <button
                   type="button"
                   onClick={resetForm}
-                  className="px-8 py-3 border-2 border-[#022d58]/20 text-[#022d58] rounded-xl font-semibold hover:bg-[#022d58]/5 transition-all duration-300"
+                  disabled={isSubmitting}
+                  className="px-8 py-3 border-2 border-[#022d58]/20 text-[#022d58] rounded-xl font-semibold hover:bg-[#022d58]/5 transition-all duration-300 disabled:opacity-50 disabled:cursor-not-allowed"
                 >
                   Cancel
                 </button>
@@ -351,7 +436,8 @@ export default function BlogsAdminPage() {
             value={search}
             onChange={(e) => setSearch(e.target.value)}
             placeholder="Search by keyword, title, or description"
-            className="w-full pl-12 pr-4 py-4 border-2 border-[#022d58]/20 rounded-xl bg-white/50 backdrop-blur-sm focus:border-[#022d58] focus:outline-none transition-all duration-300 text-[#022d58] placeholder-gray-500"
+            disabled={isSubmitting}
+            className="w-full pl-12 pr-4 py-4 border-2 border-[#022d58]/20 rounded-xl bg-white/50 backdrop-blur-sm focus:border-[#022d58] focus:outline-none transition-all duration-300 text-[#022d58] placeholder-gray-500 disabled:opacity-50 disabled:cursor-not-allowed"
           />
         </div>
         
@@ -363,7 +449,8 @@ export default function BlogsAdminPage() {
           <div className="flex gap-2">
             <button
               onClick={() => setSortOrder('newest')}
-              className={`px-4 py-2 rounded-lg font-medium transition-all duration-300 ${
+              disabled={isSubmitting}
+              className={`px-4 py-2 rounded-lg font-medium transition-all duration-300 disabled:opacity-50 disabled:cursor-not-allowed ${
                 sortOrder === 'newest'
                   ? 'bg-[#022d58] text-white shadow-lg'
                   : 'bg-white/50 text-[#022d58] border-2 border-[#022d58]/20 hover:bg-[#022d58]/5'
@@ -373,7 +460,8 @@ export default function BlogsAdminPage() {
             </button>
             <button
               onClick={() => setSortOrder('oldest')}
-              className={`px-4 py-2 rounded-lg font-medium transition-all duration-300 ${
+              disabled={isSubmitting}
+              className={`px-4 py-2 rounded-lg font-medium transition-all duration-300 disabled:opacity-50 disabled:cursor-not-allowed ${
                 sortOrder === 'oldest'
                   ? 'bg-[#022d58] text-white shadow-lg'
                   : 'bg-white/50 text-[#022d58] border-2 border-[#022d58]/20 hover:bg-[#022d58]/5'
@@ -399,12 +487,12 @@ export default function BlogsAdminPage() {
             <FileText size={48} className="text-[#022d58]/50 mx-auto mb-4" />
             <h3 className="text-xl font-semibold text-[#022d58] mb-2">No Blogs Found</h3>
             <p className="text-gray-600">
-              {search.trim() ? 'No blogs match your search criteria.' : 'Get started by adding your first blog post.'}
+              {search.trim() ? 'No blogs match your search criteria.' : 'Get started by adding your first blog.'}
             </p>
           </div>
         ) : (
           <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-            {filteredBlogs.map((blog: Blog) => (
+            {filteredBlogs.map((blog) => (
               <div
                 key={blog._id}
                 className="bg-gradient-to-br from-[#022d58]/5 to-[#003c96]/5 p-6 rounded-3xl border-2 border-[#022d58]/20 hover:shadow-lg transition-all duration-300"
@@ -416,17 +504,23 @@ export default function BlogsAdminPage() {
                   <div className="flex gap-2">
                     <button
                       onClick={() => handleEdit(blog)}
-                      className="p-2 text-[#022d58] hover:bg-[#022d58]/10 rounded-lg transition-colors"
+                      disabled={isSubmitting || deletingBlog === blog._id}
+                      className="p-2 text-[#022d58] hover:bg-[#022d58]/10 rounded-lg transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
                       title="Edit blog"
                     >
                       <Edit size={18} />
                     </button>
                     <button
-                      onClick={() => handleDelete(blog._id!)}
-                      className="p-2 text-red-600 hover:bg-red-50 rounded-lg transition-colors"
+                      onClick={() => handleDelete(blog._id!, blog.pdfUrl)}
+                      disabled={isSubmitting || deletingBlog === blog._id}
+                      className="p-2 text-red-600 hover:bg-red-50 rounded-lg transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
                       title="Delete blog"
                     >
-                      <Trash2 size={18} />
+                      {deletingBlog === blog._id ? (
+                        <Loader2 size={18} className="animate-spin" />
+                      ) : (
+                        <Trash2 size={18} />
+                      )}
                     </button>
                   </div>
                 </div>
@@ -440,7 +534,7 @@ export default function BlogsAdminPage() {
                   {blog.keywords && blog.keywords.length > 0 && (
                     <div>
                       <h4 className="text-sm font-semibold text-[#022d58] mb-1">Keywords</h4>
-                      <div className="flex flex-wrap gap-2">
+                      <div className="flex flex-wrap gap-1">
                         {blog.keywords.map((keyword, index) => (
                           <span
                             key={index}
@@ -453,11 +547,11 @@ export default function BlogsAdminPage() {
                     </div>
                   )}
                   
-                  <div className="flex items-center justify-between pt-2">
-                                         <div className="flex items-center gap-2 text-gray-500 text-sm">
-                       <Calendar size={14} />
-                       <span>{formatDate(blog._id)}</span>
-                     </div>
+                  <div className="flex items-center justify-between">
+                    <div className="flex items-center gap-2 text-gray-500 text-sm">
+                      <Calendar size={14} />
+                      <span>{formatDate(blog._id)}</span>
+                    </div>
                     
                     {blog.pdfUrl && (
                       <a
