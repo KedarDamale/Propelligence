@@ -13,8 +13,10 @@ const sidebarLinks = [
 
 export default function AdminPanelLayout({ children }: { children: React.ReactNode }) {
   const router = useRouter();
-  const [storageUsage, setStorageUsage] = useState<any>(null);
-  const [loading, setLoading] = useState(true);
+  const [storageUsage, setStorageUsage] = useState<{
+    totalSizeGB: number;
+    usagePercentage: number;
+  } | null>(null);
   const [isAuthenticated, setIsAuthenticated] = useState(false);
 
   useEffect(() => {
@@ -27,7 +29,7 @@ export default function AdminPanelLayout({ children }: { children: React.ReactNo
         } else {
           router.push("/admin/login");
         }
-      } catch (error) {
+      } catch {
         router.push("/admin/login");
       }
     }
@@ -48,8 +50,6 @@ export default function AdminPanelLayout({ children }: { children: React.ReactNo
         }
       } catch (error) {
         console.error('Failed to fetch storage usage:', error);
-      } finally {
-        setLoading(false);
       }
     }
 

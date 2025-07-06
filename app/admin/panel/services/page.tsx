@@ -32,8 +32,6 @@ export default function ServicesAdminPage() {
   const [error, setError] = useState("");
   const [notifications, setNotifications] = useState<Notification[]>([]);
   const fileInputRef = useRef<HTMLInputElement>(null);
-  const [storageType, setStorageType] = useState<'blob' | 'base64'>('blob');
-  
   // Loading states
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [deletingService, setDeletingService] = useState<string | null>(null);
@@ -208,7 +206,6 @@ export default function ServicesAdminPage() {
     setCurrentPdfUrl(null);
     setShowForm(false);
     setError("");
-    setStorageType('blob');
     if (fileInputRef.current) fileInputRef.current.value = "";
   }
 

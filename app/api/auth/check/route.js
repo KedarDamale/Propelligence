@@ -16,7 +16,7 @@ export async function GET() {
         headers: { 'Content-Type': 'application/json' },
       });
     }
-  } catch (error) {
+  } catch {
     return new Response(JSON.stringify({ authenticated: false }), {
       status: 401,
       headers: { 'Content-Type': 'application/json' },
