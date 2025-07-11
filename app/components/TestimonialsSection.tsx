@@ -49,7 +49,7 @@ const TestimonialsSection = () => {
         <div className="relative max-w-4xl mx-auto">
           <div
             className={
-              'group relative p-4 rounded-3xl bg-white border-2 border-black shadow-xl transition-all duration-300 transform hover:-translate-y-2 hover:scale-105 flex flex-col items-center justify-center overflow-hidden min-h-[340px] max-w-2xl mx-auto'
+              'group relative p-4 rounded-3xl bg-white border-2 border-black shadow-xl transition-all duration-300 transform hover:-translate-y-2 hover:scale-105 flex flex-col items-center justify-center overflow-hidden min-h-[340px] max-w-2xl mx-auto glow-blue'
             }
             style={{ textDecoration: 'none' }}
           >

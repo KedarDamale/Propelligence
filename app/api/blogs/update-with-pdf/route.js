@@ -35,6 +35,7 @@ export async function PUT(req) {
       title,
       short_desc,
       long_desc,
+      description: long_desc, // Ensure the main description field is updated
     };
 
     // Handle keywords if provided

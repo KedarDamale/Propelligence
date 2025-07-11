@@ -97,7 +97,7 @@ const OurWorkSection = () => {
                   role="button"
                   onClick={() => setExpandedIndex(isExpanded ? null : index)}
                   onKeyPress={e => { if (e.key === 'Enter' || e.key === ' ') setExpandedIndex(isExpanded ? null : index); }}
-                  className={`group relative p-4 rounded-3xl bg-white border-2 border-black shadow-xl transition-all duration-300 transform hover:-translate-y-2 hover:scale-105 flex flex-col items-center justify-center overflow-hidden no-underline cursor-pointer ${isExpanded ? 'scale-105 border-4' : ''} w-full md:w-80`}
+                  className={`group relative p-4 rounded-3xl bg-white border-2 border-black shadow-xl transition-all duration-300 transform hover:-translate-y-2 hover:scale-105 flex flex-col items-center justify-center overflow-hidden no-underline cursor-pointer glow-blue ${isExpanded ? 'scale-105 border-4' : ''} w-full md:w-80`}
                   style={{ textDecoration: 'none' }}
                 >
                   <div className="flex flex-col items-center pt-1 pb-1 px-1 w-full">

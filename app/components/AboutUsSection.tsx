@@ -139,7 +139,7 @@ const AboutUsSection = () => {
             onKeyPress={(e) => {
               if (e.key === "Enter" || e.key === " ") setExpanded((e) => !e);
             }}
-            className={`group relative p-4 rounded-3xl border-2 border-black shadow-xl transition-all duration-300 transform hover:-translate-y-2 hover:scale-105 flex flex-col items-center justify-center overflow-hidden no-underline cursor-pointer w-full max-w-2xl mx-auto ${
+            className={`group relative p-4 rounded-3xl border-2 border-black shadow-xl transition-all duration-300 transform hover:-translate-y-2 hover:scale-105 flex flex-col items-center justify-center overflow-hidden no-underline cursor-pointer w-full max-w-2xl mx-auto glow-blue ${
               expanded
                 ? "bg-gray-100 scale-105 border-4"
                 : "bg-white"
@@ -186,7 +186,7 @@ const AboutUsSection = () => {
               </h2>
             </div>
             <div className="relative max-w-2xl mx-auto w-full">
-              <div className="group relative p-6 rounded-3xl bg-white border-2 border-black shadow-lg flex flex-col items-center justify-center overflow-hidden min-h-[340px] w-full max-w-full backdrop-blur-md">
+              <div className="group relative p-6 rounded-3xl bg-white border-2 border-black shadow-lg flex flex-col items-center justify-center overflow-hidden min-h-[340px] w-full max-w-full backdrop-blur-md glow-blue">
                 {/* Image or Initial */}
                 {board_members[currentBoard].imagepath && typeof board_members[currentBoard].imagepath === 'string' ? (
                   <Image

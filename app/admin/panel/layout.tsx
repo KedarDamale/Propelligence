@@ -3,12 +3,13 @@ import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
 import Image from "next/image";
-import { HardDrive } from "lucide-react";
+import { HardDrive, Menu } from "lucide-react";
 
 const sidebarLinks = [
   { name: "Services", href: "/admin/panel/services" },
   { name: "Blogs", href: "/admin/panel/blogs" },
   { name: "Testimonials", href: "/admin/panel/testimonials" },
+  { name: "Contact", href: "/admin/panel/contact-submissions" },
 ];
 
 export default function AdminPanelLayout({ children }: { children: React.ReactNode }) {
@@ -18,6 +19,7 @@ export default function AdminPanelLayout({ children }: { children: React.ReactNo
     usagePercentage: number;
   } | null>(null);
   const [isAuthenticated, setIsAuthenticated] = useState(false);
+  const [sidebarOpen, setSidebarOpen] = useState(false);
 
   useEffect(() => {
     // Check authentication status
@@ -85,9 +87,30 @@ export default function AdminPanelLayout({ children }: { children: React.ReactNo
 
   return (
     <div className="flex min-h-screen bg-gradient-to-br from-[#ee800227] to-[#01ff5a49]">
-      <aside className="w-64 bg-white/95 backdrop-blur-md border-r-2 border-[#022d58]/20 flex flex-col p-6 shadow-2xl h-screen sticky top-0">
+      {/* Mobile Topbar */}
+      <div className="md:hidden fixed top-0 left-0 right-0 z-30 bg-white/95 border-b-2 border-[#022d58]/20 flex items-center justify-between px-4 py-3 shadow-lg">
+        <div className="flex items-center gap-2">
+          <Image
+            src="/Company-logo-svg.svg"
+            alt="Propelligence Logo"
+            width={40}
+            height={40}
+            className="w-10 h-10 rounded-xl object-contain drop-shadow-lg"
+            priority
+            draggable={false}
+          />
+          <span className="font-bold text-[#022d58] text-lg">Admin Panel</span>
+        </div>
+        <button onClick={() => setSidebarOpen((v) => !v)} className="p-2 rounded hover:bg-[#022d58]/10">
+          <Menu className="w-7 h-7 text-[#022d58]" />
+        </button>
+      </div>
+      {/* Sidebar (drawer on mobile, fixed on md+) */}
+      <aside className={`fixed z-40 top-0 left-0 h-full w-64 bg-white/95 backdrop-blur-md border-r-2 border-[#022d58]/20 flex flex-col p-6 shadow-2xl transition-transform duration-300 md:sticky md:translate-x-0 md:flex md:top-0 ${sidebarOpen ? 'translate-x-0' : '-translate-x-full'} md:translate-x-0 md:w-64 md:h-screen`}>
+        {/* Close button on mobile */}
+        <button className="md:hidden absolute top-4 right-4 text-[#022d58] text-2xl" onClick={() => setSidebarOpen(false)}>&times;</button>
         {/* Company Logo and Title */}
-        <div className="flex flex-col items-center space-y-0 mb-8">
+        <div className="flex flex-col items-center space-y-0 mb-8 mt-8 md:mt-0">
           <Image
             src="/Company-logo-svg.svg"
             alt="Propelligence Logo"
@@ -102,7 +125,6 @@ export default function AdminPanelLayout({ children }: { children: React.ReactNo
             <p className="text-sm font-semibold text-[#022d58]">Advisors Private Limited</p>
           </div>
         </div>
-        
         {/* Admin Panel Title */}
         <div className="text-center mb-6">
           <Link href="/admin/panel" className="block">
@@ -110,7 +132,6 @@ export default function AdminPanelLayout({ children }: { children: React.ReactNo
             <div className="w-16 h-1 bg-gradient-to-r from-[#022d58] to-[#003c96] mx-auto rounded-full"></div>
           </Link>
         </div>
-        
         {/* Navigation */}
         <nav className="flex flex-col gap-3">
           {sidebarLinks.map(link => (
@@ -118,12 +139,12 @@ export default function AdminPanelLayout({ children }: { children: React.ReactNo
               key={link.href} 
               href={link.href} 
               className="hover:bg-gradient-to-r hover:from-[#022d58] hover:to-[#003c96] hover:text-white rounded-xl px-4 py-3 transition-all duration-300 font-semibold text-[#022d58] border-2 border-transparent hover:border-[#022d58]/20"
+              onClick={() => setSidebarOpen(false)}
             >
               {link.name}
             </Link>
           ))}
         </nav>
-        
         {/* Storage Usage */}
         {storageUsage && (
           <div className="mt-6 p-4 bg-gradient-to-br from-[#022d58]/5 to-[#003c96]/5 rounded-xl border-2 border-[#022d58]/20">
@@ -160,7 +181,6 @@ export default function AdminPanelLayout({ children }: { children: React.ReactNo
             </div>
           </div>
         )}
-
         {/* Logout Button */}
         <div className="mt-auto">
           <button 
@@ -174,9 +194,9 @@ export default function AdminPanelLayout({ children }: { children: React.ReactNo
           </button>
         </div>
       </aside>
-      
-      <main className="flex-1 p-6 md:p-8 bg-transparent">
-        <div className="bg-white/95 backdrop-blur-md rounded-3xl shadow-2xl border-2 border-[#022d58]/20 p-6 md:p-8 min-h-full">
+      {/* Main content */}
+      <main className="flex-1 pt-16 md:pt-0 p-2 md:p-6 lg:p-8 bg-transparent">
+        <div className="bg-white/95 backdrop-blur-md rounded-3xl shadow-2xl border-2 border-[#022d58]/20 p-2 md:p-8 min-h-full">
           {children}
         </div>
       </main>
