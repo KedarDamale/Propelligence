@@ -41,15 +41,6 @@ const columns = [
   "Submitted At",
 ];
 
-const displayColumns = [
-  { key: 'email', label: 'Email' },
-  { key: 'businessName', label: 'Business Name' },
-  { key: 'businessType', label: 'Business Type' },
-  { key: 'services', label: 'Services Interested In' },
-  { key: 'turnover', label: 'Monthly Turnover' },
-  { key: 'bookConsultation', label: 'Book Consultation' },
-];
-
 const FILTERS = [
   { label: 'Today', value: 'today' },
   { label: 'Weekly', value: 'week' },

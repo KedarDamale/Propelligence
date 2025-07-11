@@ -1,5 +1,4 @@
 import clientPromise from '../../../../lib/mongodb';
-import { ContactSubmission } from '../../../../lib/contactSubmissionSchema';
 
 export async function GET() {
   try {

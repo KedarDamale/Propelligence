@@ -1,11 +1,10 @@
 import clientPromise from '../../../lib/mongodb';
-import { ContactSubmission } from '../../../lib/contactSubmissionSchema';
 
 export async function GET() {
   try {
     const client = await clientPromise;
     const db = client.db();
-    const submissions: ContactSubmission[] = await db
+    const submissions = await db
       .collection('contact_submissions')
       .find({})
       .sort({ createdAt: -1 })
