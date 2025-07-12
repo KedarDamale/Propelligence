@@ -12,9 +12,9 @@ export default function NotFound() {
           Sorry, the page you are looking for does not exist or has been moved.
         </p>
         <Link href="/">
-          <button className="bg-[#022d58] text-white px-6 py-3 rounded-full font-semibold hover:bg-[#003c96] transition-colors duration-300 flex items-center space-x-2">
+          <button className="bg-[#022d58] text-white px-6 py-3 rounded-full font-semibold hover:bg-[#003c96] transition-colors duration-300 flex items-center space-x-2 hero-title" style={{fontFamily: 'var(--font-oswald), Oswald, sans-serif'}}>
             <ArrowLeft size={18} className="mr-2" />
-            Go to Home Page
+            <span style={{fontFamily: 'var(--font-oswald), Oswald, sans-serif'}}>Go to Home Page</span>
           </button>
         </Link>
       </div>

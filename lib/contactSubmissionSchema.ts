@@ -15,4 +15,6 @@ export interface ContactSubmission {
   requirement: string;
   bookConsultation: string;
   createdAt?: Date | string;
+  contacted?: boolean;
+  contactedAt?: Date | string;
 } 

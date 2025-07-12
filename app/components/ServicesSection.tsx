@@ -108,27 +108,28 @@ const ServicesSection = () => {
                       <hr className="w-3/4 border-t-2 border-black my-2 transition-all duration-500" />
                     </div>
                     {service.pdfUrl ? (
-                      <a
-                        href={service.pdfUrl}
-                        target="_blank"
-                        rel="noopener noreferrer"
-                        className="mt-4 bg-[#022d58] text-white px-4 py-2 rounded-full font-semibold hover:bg-[#003c96] transition-colors duration-300 flex items-center space-x-2"
-                        onClick={e => e.stopPropagation()}
-                        style={{ textDecoration: 'none' }}
-                        title="View Service PDF"
-                      >
-                        <ArrowRight size={18} className="mr-2" />
-                        View Service PDF
-                      </a>
+                                              <a
+                          href={service.pdfUrl}
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          className="mt-4 bg-[#022d58] text-white px-4 py-2 rounded-full font-semibold hover:bg-[#003c96] transition-colors duration-300 flex items-center space-x-2 hero-title"
+                          onClick={e => e.stopPropagation()}
+                          style={{ textDecoration: 'none', fontFamily: 'var(--font-oswald), Oswald, sans-serif' }}
+                          title="View Service PDF"
+                        >
+                          <ArrowRight size={18} className="mr-2" />
+                          <span style={{fontFamily: 'var(--font-oswald), Oswald, sans-serif'}}>View Service PDF</span>
+                        </a>
                     ) : (
                       <button
-                        className="mt-4 bg-gray-400 text-white px-4 py-2 rounded-full font-semibold flex items-center space-x-2 cursor-not-allowed opacity-70"
+                        className="mt-4 bg-gray-400 text-white px-4 py-2 rounded-full font-semibold flex items-center space-x-2 cursor-not-allowed opacity-70 hero-title"
+                        style={{fontFamily: 'var(--font-oswald), Oswald, sans-serif'}}
                         onClick={e => e.stopPropagation()}
                         disabled
                         title="No PDF available for this service"
                       >
                         <ArrowRight size={18} className="mr-2" />
-                        View Service PDF
+                        <span style={{fontFamily: 'var(--font-oswald), Oswald, sans-serif'}}>View Service PDF</span>
                       </button>
                     )}
                   </div>
@@ -147,17 +148,19 @@ const ServicesSection = () => {
         {visibleCount < safeServices.length && (
           <div className="text-center mb-8">
             <button
-              className="bg-[#022d58] text-white px-6 py-3 rounded-full font-semibold hover:bg-[#003c96] transition-colors duration-300"
+              className="bg-[#022d58] text-white px-6 py-3 rounded-full font-semibold hover:bg-[#003c96] transition-colors duration-300 hero-title"
+              style={{fontFamily: 'var(--font-oswald), Oswald, sans-serif'}}
               onClick={() => setVisibleCount(count => Math.min(count + 3, safeServices.length))}
             >
-              Load More Services
+              <span style={{fontFamily: 'var(--font-oswald), Oswald, sans-serif'}}>Load More Services</span>
             </button>
           </div>
         )}
         {visibleCount >= safeServices.length && safeServices.length > 2 && (
           <div className="text-center mb-8">
             <button
-              className="bg-[#022d58] text-white px-6 py-3 rounded-full font-semibold hover:bg-[#003c96] transition-colors duration-300"
+              className="bg-[#022d58] text-white px-6 py-3 rounded-full font-semibold hover:bg-[#003c96] transition-colors duration-300 hero-title"
+              style={{fontFamily: 'var(--font-oswald), Oswald, sans-serif'}}
               onClick={() => {
                 setVisibleCount(3);
                 setExpandedIndex(null);
@@ -169,7 +172,7 @@ const ServicesSection = () => {
                 }, 100);
               }}
             >
-              Collapse Service Section
+              <span style={{fontFamily: 'var(--font-oswald), Oswald, sans-serif'}}>Collapse Service Section</span>
             </button>
           </div>
         )}

@@ -278,8 +278,8 @@ const ContactSection = () => {
                       {errors.email && <span className="text-red-500 text-xs absolute left-0 -bottom-5">{errors.email}</span>}
                     </div>
                     <div className="flex justify-end w-full">
-                      <button type="submit" className="bg-gradient-to-r from-[#022d58] to-[#003c96] text-white px-8 py-3 rounded-full font-semibold shadow-md hover:shadow-lg hover:bg-[#003c96] transition-colors duration-300 w-full md:w-auto flex items-center gap-2">
-                        Next <ArrowRight className="w-5 h-5 ml-2" />
+                      <button type="submit" className="bg-gradient-to-r from-[#022d58] to-[#003c96] text-white px-8 py-3 rounded-full font-semibold shadow-md hover:shadow-xl hover:bg-[#003c96] transition-all duration-300 w-full md:w-auto flex items-center gap-2 hero-title transform hover:scale-105" style={{fontFamily: 'var(--font-oswald), Oswald, sans-serif'}}>
+                        <span style={{fontFamily: 'var(--font-oswald), Oswald, sans-serif'}}>Next</span> <ArrowRight className="w-5 h-5 ml-2" />
                       </button>
                     </div>
                   </>
@@ -303,10 +303,10 @@ const ContactSection = () => {
                         {errors.businessName && <span className="text-red-500 text-xs absolute left-0 -bottom-5">{errors.businessName}</span>}
                       </div>
                       <div className="mb-4">
-                        <label className="block font-semibold mb-1">Business Type</label>
+                        <label className="block font-semibold mb-1 hero-title">Business Type</label>
                         <div className="flex flex-wrap gap-3">
                           {businessTypes.map((type) => (
-                            <label key={type} className={`cursor-pointer flex items-center gap-2 px-4 py-2 rounded-xl border-2 transition-all duration-200 select-none
+                            <label key={type} className={`cursor-pointer flex items-center gap-2 px-4 py-2 rounded-xl border-2 transition-all duration-200 select-none hero-title
                               ${formData.businessType === type ? 'bg-gradient-to-r from-[#022d58] to-[#003c96] text-white border-[#022d58]' : 'bg-white border-[#022d58]/30 text-[#022d58] hover:bg-[#022d58]/10'}`}
                             >
                               <input
@@ -318,7 +318,7 @@ const ContactSection = () => {
                                 required
                                 className="accent-[#022d58] w-4 h-4"
                               />
-                              <span>{type}</span>
+                              <span className="hero-title">{type}</span>
                               {type === 'Other' && formData.businessType === 'Other' && (
                                 <input
                                   type="text"
@@ -336,10 +336,10 @@ const ContactSection = () => {
                         {errors.businessTypeOther && <span className="text-red-500 text-xs">{errors.businessTypeOther}</span>}
                       </div>
                       <div className="mb-4">
-                        <label className="block font-semibold mb-1">What services are you interested in?</label>
+                        <label className="block font-semibold mb-1 hero-title">What services are you interested in?</label>
                         <div className="flex flex-wrap gap-3">
                           {servicesList.map((service) => (
-                            <label key={service} className={`cursor-pointer flex items-center gap-2 px-4 py-2 rounded-xl border-2 transition-all duration-200 select-none
+                            <label key={service} className={`cursor-pointer flex items-center gap-2 px-4 py-2 rounded-xl border-2 transition-all duration-200 select-none hero-title
                               ${formData.services.includes(service) ? 'bg-gradient-to-r from-[#022d58] to-[#003c96] text-white border-[#022d58]' : 'bg-white border-[#022d58]/30 text-[#022d58] hover:bg-[#022d58]/10'}`}
                             >
                               <input
@@ -350,7 +350,7 @@ const ContactSection = () => {
                                 onChange={handleChange}
                                 className="accent-[#022d58] w-4 h-4"
                               />
-                              <span>{service}</span>
+                              <span className="hero-title">{service}</span>
                               {service === 'Other' && formData.services.includes('Other') && (
                                 <input
                                   type="text"
@@ -367,10 +367,10 @@ const ContactSection = () => {
                         {errors.services && <span className="text-red-500 text-xs">{errors.services}</span>}
                       </div>
                       <div className="mb-4">
-                        <label className="block font-semibold mb-1">Monthly Turnover (optional)</label>
+                        <label className="block font-semibold mb-1 hero-title">Annual Turnover (optional)</label>
                         <div className="flex flex-wrap gap-3">
                           {turnoverOptions.map((option) => (
-                            <label key={option} className={`cursor-pointer flex items-center gap-2 px-4 py-2 rounded-xl border-2 transition-all duration-200 select-none
+                            <label key={option} className={`cursor-pointer flex items-center gap-2 px-4 py-2 rounded-xl border-2 transition-all duration-200 select-none hero-title
                               ${formData.turnover === option ? 'bg-gradient-to-r from-[#022d58] to-[#003c96] text-white border-[#022d58]' : 'bg-white border-[#022d58]/30 text-[#022d58] hover:bg-[#022d58]/10'}`}
                             >
                               <input
@@ -381,18 +381,18 @@ const ContactSection = () => {
                                 onChange={handleChange}
                                 className="accent-[#022d58] w-4 h-4"
                               />
-                              <span>{option}</span>
+                              <span className="hero-title">{option}</span>
                             </label>
                           ))}
                         </div>
                       </div>
                     </div>
                     <div className="flex justify-between w-full">
-                      <button onClick={handleBack} className="bg-gradient-to-r from-gray-200 to-gray-300 text-black px-8 py-3 rounded-full font-semibold shadow hover:bg-gray-400 transition-colors duration-300 w-full md:w-auto flex items-center gap-2">
-                        <ArrowLeft className="w-5 h-5 mr-2" /> Back
+                      <button onClick={handleBack} className="bg-gradient-to-r from-gray-200 to-gray-300 text-black px-8 py-3 rounded-full font-semibold shadow hover:bg-gray-400 transition-all duration-300 w-full md:w-auto flex items-center gap-2 hero-title transform hover:scale-105 hover:shadow-xl" style={{fontFamily: 'var(--font-oswald), Oswald, sans-serif'}}>
+                        <ArrowLeft className="w-5 h-5 mr-2" /> <span style={{fontFamily: 'var(--font-oswald), Oswald, sans-serif'}}>Back</span>
                       </button>
-                      <button type="submit" className="bg-gradient-to-r from-[#022d58] to-[#003c96] text-white px-8 py-3 rounded-full font-semibold shadow-md hover:shadow-lg hover:bg-[#003c96] transition-colors duration-300 w-full md:w-auto flex items-center gap-2">
-                        Next <ArrowRight className="w-5 h-5 ml-2" />
+                      <button type="submit" className="bg-gradient-to-r from-[#022d58] to-[#003c96] text-white px-8 py-3 rounded-full font-semibold shadow-md hover:shadow-xl hover:bg-[#003c96] transition-all duration-300 w-full md:w-auto flex items-center gap-2 hero-title transform hover:scale-105" style={{fontFamily: 'var(--font-oswald), Oswald, sans-serif'}}>
+                        <span style={{fontFamily: 'var(--font-oswald), Oswald, sans-serif'}}>Next</span> <ArrowRight className="w-5 h-5 ml-2" />
                       </button>
                     </div>
                   </>
@@ -402,10 +402,10 @@ const ContactSection = () => {
                   <>
                     <div className="flex flex-col gap-4">
                       <div className="mb-2">
-                        <label className="block font-semibold mb-1 text-[#022d58]">Preferred Mode of Contact</label>
+                        <label className="block font-semibold mb-1 text-[#022d58] hero-title">Preferred Mode of Contact</label>
                         <div className="flex flex-wrap gap-4">
                           {contactModes.map((mode) => (
-                            <label key={mode} className="flex items-center gap-2 px-4 py-2 rounded-xl border-2 border-[#022d58]/30 text-[#022d58] hover:bg-[#022d58]/10 cursor-pointer transition-all">
+                            <label key={mode} className="flex items-center gap-2 px-4 py-2 rounded-xl border-2 border-[#022d58]/30 text-[#022d58] hover:bg-[#022d58]/10 cursor-pointer transition-all hero-title">
                               <input
                                 type="checkbox"
                                 name="contactModes"
@@ -414,7 +414,7 @@ const ContactSection = () => {
                                 onChange={handleChange}
                                 className="accent-[#022d58] w-4 h-4"
                               />
-                              {mode}
+                              <span className="hero-title">{mode}</span>
                             </label>
                           ))}
                         </div>
@@ -434,9 +434,9 @@ const ContactSection = () => {
                         {errors.requirement && <span className="text-red-500 text-xs absolute left-0 -bottom-5">{errors.requirement}</span>}
                       </div>
                       <div className="mb-2">
-                        <label className="block font-semibold mb-1 text-[#022d58]">Would you like to book a 1-on-1 consultation call?</label>
+                        <label className="block font-semibold mb-1 text-[#022d58] hero-title">Would you like to book a 1-on-1 consultation call?</label>
                         <div className="flex gap-4">
-                          <label className="flex items-center gap-2 px-4 py-2 rounded-xl border-2 border-[#022d58]/30 text-[#022d58] hover:bg-[#022d58]/10 cursor-pointer transition-all">
+                          <label className="flex items-center gap-2 px-4 py-2 rounded-xl border-2 border-[#022d58]/30 text-[#022d58] hover:bg-[#022d58]/10 cursor-pointer transition-all hero-title">
                             <input
                               type="radio"
                               name="bookConsultation"
@@ -446,9 +446,9 @@ const ContactSection = () => {
                               required
                               className="accent-[#022d58] w-4 h-4"
                             />
-                            Yes
+                            <span className="hero-title">Yes</span>
                           </label>
-                          <label className="flex items-center gap-2 px-4 py-2 rounded-xl border-2 border-[#022d58]/30 text-[#022d58] hover:bg-[#022d58]/10 cursor-pointer transition-all">
+                          <label className="flex items-center gap-2 px-4 py-2 rounded-xl border-2 border-[#022d58]/30 text-[#022d58] hover:bg-[#022d58]/10 cursor-pointer transition-all hero-title">
                             <input
                               type="radio"
                               name="bookConsultation"
@@ -458,21 +458,21 @@ const ContactSection = () => {
                               required
                               className="accent-[#022d58] w-4 h-4"
                             />
-                            No
+                            <span className="hero-title">No</span>
                           </label>
                         </div>
                         {errors.bookConsultation && <span className="text-red-500 text-xs">{errors.bookConsultation}</span>}
                       </div>
                     </div>
                     <div className="flex justify-between w-full">
-                      <button onClick={handleBack} className="bg-gradient-to-r from-gray-200 to-gray-300 text-black px-8 py-3 rounded-full font-semibold shadow hover:bg-gray-400 transition-colors duration-300 w-full md:w-auto flex items-center gap-2">
-                        <ArrowLeft className="w-5 h-5 mr-2" /> Back
+                      <button onClick={handleBack} className="bg-gradient-to-r from-gray-200 to-gray-300 text-black px-8 py-3 rounded-full font-semibold shadow hover:bg-gray-400 transition-all duration-300 w-full md:w-auto flex items-center gap-2 hero-title transform hover:scale-105 hover:shadow-xl" style={{fontFamily: 'var(--font-oswald), Oswald, sans-serif'}}>
+                        <ArrowLeft className="w-5 h-5 mr-2" /> <span style={{fontFamily: 'var(--font-oswald), Oswald, sans-serif'}}>Back</span>
                       </button>
-                      <button type="submit" disabled={loading} className="bg-gradient-to-r from-[#022d58] to-[#003c96] text-white px-8 py-3 rounded-full font-semibold shadow-md hover:shadow-lg hover:bg-[#003c96] transition-colors duration-300 w-full md:w-auto flex items-center gap-2 disabled:opacity-60">
+                      <button type="submit" disabled={loading} className="bg-gradient-to-r from-[#022d58] to-[#003c96] text-white px-8 py-3 rounded-full font-semibold shadow-md hover:shadow-xl hover:bg-[#003c96] transition-all duration-300 w-full md:w-auto flex items-center gap-2 disabled:opacity-60 hero-title transform hover:scale-105" style={{fontFamily: 'var(--font-oswald), Oswald, sans-serif'}}>
                         {loading ? (
                           <svg className="animate-spin h-5 w-5 mr-2 text-white" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24"><circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle><path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8v8z"></path></svg>
                         ) : (
-                          <>Submit <ArrowRight className="w-5 h-5 ml-2" /></>
+                          <><span style={{fontFamily: 'var(--font-oswald), Oswald, sans-serif'}}>Submit</span> <ArrowRight className="w-5 h-5 ml-2" /></>
                         )}
                       </button>
                     </div>

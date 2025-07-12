@@ -64,16 +64,18 @@ const OurWorkSection = () => {
         <div className="w-full max-w-5xl mx-auto flex justify-center mb-6">
           <div className="flex gap-2">
             <button
-              className={`px-4 py-2 rounded-full font-semibold border-2 transition-colors duration-200 ${sort === 'newest' ? 'bg-[#022d58] text-white border-[#022d58]' : 'bg-white text-[#022d58] border-[#022d58]'}`}
+              className={`px-4 py-2 rounded-full font-semibold border-2 transition-colors duration-200 hero-title ${sort === 'newest' ? 'bg-[#022d58] text-white border-[#022d58]' : 'bg-white text-[#022d58] border-[#022d58]'}`}
+              style={{fontFamily: 'var(--font-oswald), Oswald, sans-serif'}}
               onClick={() => setSort('newest')}
             >
-              Newest
+              <span style={{fontFamily: 'var(--font-oswald), Oswald, sans-serif'}}>Newest</span>
             </button>
             <button
-              className={`px-4 py-2 rounded-full font-semibold border-2 transition-colors duration-200 ${sort === 'oldest' ? 'bg-[#022d58] text-white border-[#022d58]' : 'bg-white text-[#022d58] border-[#022d58]'}`}
+              className={`px-4 py-2 rounded-full font-semibold border-2 transition-colors duration-200 hero-title ${sort === 'oldest' ? 'bg-[#022d58] text-white border-[#022d58]' : 'bg-white text-[#022d58] border-[#022d58]'}`}
+              style={{fontFamily: 'var(--font-oswald), Oswald, sans-serif'}}
               onClick={() => setSort('oldest')}
             >
-              Oldest
+              <span style={{fontFamily: 'var(--font-oswald), Oswald, sans-serif'}}>Oldest</span>
             </button>
           </div>
         </div>
@@ -135,21 +137,22 @@ const OurWorkSection = () => {
                                 href={blog.pdfUrl}
                                 target="_blank"
                                 rel="noopener noreferrer"
-                                className="mt-4 bg-[#022d58] text-white px-4 py-2 rounded-full font-semibold hover:bg-[#003c96] transition-colors duration-300 flex items-center space-x-2"
+                                className="mt-4 bg-[#022d58] text-white px-4 py-2 rounded-full font-semibold hover:bg-[#003c96] transition-colors duration-300 flex items-center space-x-2 hero-title"
                                 onClick={e => e.stopPropagation()}
-                                style={{ textDecoration: 'none' }}
+                                style={{ textDecoration: 'none', fontFamily: 'var(--font-oswald), Oswald, sans-serif' }}
                               >
                                 <ArrowRight size={18} className="mr-2" />
-                                View Blog PDF
+                                <span style={{fontFamily: 'var(--font-oswald), Oswald, sans-serif'}}>View Blog PDF</span>
                               </a>
                             ) : (
                               <button
-                                className="mt-4 bg-gray-400 text-white px-4 py-2 rounded-full font-semibold cursor-not-allowed flex items-center space-x-2"
+                                className="mt-4 bg-gray-400 text-white px-4 py-2 rounded-full font-semibold cursor-not-allowed flex items-center space-x-2 hero-title"
+                                style={{fontFamily: 'var(--font-oswald), Oswald, sans-serif'}}
                                 onClick={e => e.stopPropagation()}
                                 disabled
                               >
                                 <ArrowRight size={18} className="mr-2" />
-                                No Blog PDF
+                                <span style={{fontFamily: 'var(--font-oswald), Oswald, sans-serif'}}>No Blog PDF</span>
                               </button>
                             )}
                           </>
@@ -173,10 +176,11 @@ const OurWorkSection = () => {
         {visibleCount < blogs.length && !loading && (
           <div className="text-center mb-8">
             <button
-              className="bg-[#022d58] text-white px-6 py-3 rounded-full font-semibold hover:bg-[#003c96] transition-colors duration-300"
+              className="bg-[#022d58] text-white px-6 py-3 rounded-full font-semibold hover:bg-[#003c96] transition-colors duration-300 hero-title"
+              style={{fontFamily: 'var(--font-oswald), Oswald, sans-serif'}}
               onClick={() => setVisibleCount(count => Math.min(count + 5, blogs.length))}
             >
-              Load More Blogs
+              <span style={{fontFamily: 'var(--font-oswald), Oswald, sans-serif'}}>Load More Blogs</span>
             </button>
           </div>
         )}
@@ -184,7 +188,8 @@ const OurWorkSection = () => {
         {visibleCount >= blogs.length && blogs.length > 5 && !loading && (
           <div className="text-center mb-8">
             <button
-              className="bg-[#022d58] text-white px-6 py-3 rounded-full font-semibold hover:bg-[#003c96] transition-colors duration-300"
+              className="bg-[#022d58] text-white px-6 py-3 rounded-full font-semibold hover:bg-[#003c96] transition-colors duration-300 hero-title"
+              style={{fontFamily: 'var(--font-oswald), Oswald, sans-serif'}}
               onClick={() => {
                 setVisibleCount(5);
                 setExpandedIndex(null);
@@ -196,7 +201,7 @@ const OurWorkSection = () => {
                 }, 100);
               }}
             >
-              Collapse Blogs Section
+              <span style={{fontFamily: 'var(--font-oswald), Oswald, sans-serif'}}>Collapse Blogs Section</span>
             </button>
           </div>
         )}

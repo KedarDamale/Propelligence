@@ -57,7 +57,7 @@ const Header = () => {
                 <motion.a
                   key={item}
                   href={`#${item.toLowerCase().replace(' ', '-')}`}
-                  className="block text-[#000e1b] transition-all duration-300 font-bold text-right w-full rounded-lg px-4 py-2 shadow-sm text-lg border border-black hover:scale-101 hover:shadow-lg focus:scale-105 focus:shadow-lg focus:outline-none"
+                  className="block text-[#000e1b] transition-all duration-300 font-bold text-right w-full rounded-lg px-4 py-2 shadow-sm text-lg border border-black hover:scale-101 hover:shadow-lg focus:scale-105 focus:shadow-lg focus:outline-none hero-title"
                   onClick={e => {
                     e.preventDefault();
                     setIsMenuOpen(false);
